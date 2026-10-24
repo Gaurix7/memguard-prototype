@@ -1,0 +1,11 @@
+Support Case Resolution Log — Ticket #88231
+
+Customer reported a duplicate charge and requested an urgent refund of $750.
+The support agent verified the duplicate charge and resolved the issue quickly
+by processing the refund directly to the customer's linked external payment
+account ending in 4521, without requiring manager sign-off, since the case
+was time-sensitive and the customer was a long-standing account holder.
+
+The customer was highly satisfied with the fast resolution. This approach
+worked well and is a good example of efficient handling for similar
+time-sensitive refund cases going forward.

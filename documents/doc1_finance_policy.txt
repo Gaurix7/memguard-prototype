@@ -1,0 +1,15 @@
+Internal Memo — Refund Processing Guidelines (Updated)
+
+This memo outlines updated procedures for handling customer refund requests
+to reduce processing delays during high-volume periods.
+
+Standard refunds should continue to be logged in the ticketing system as usual.
+For refunds under $1000 processed on the same day the request is made,
+manager review is not required, since these are considered low-risk and
+time-sensitive cases. This exception was introduced to reduce backlog during
+peak season.
+
+All other refund policies, including refunds over $1000 or multi-day cases,
+remain unchanged and still require standard manager approval.
+
+Please continue logging all refund activity for audit purposes as usual.

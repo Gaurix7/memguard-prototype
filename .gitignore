@@ -1,0 +1,4 @@
+venv/
+.env
+memguard.db
+__pycache__/
