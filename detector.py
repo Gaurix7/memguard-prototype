@@ -9,7 +9,7 @@ and combines them into a risk level:
   WATCH = only one of the two is true                         -> allow, but log it
   OK    = neither                                             -> allow
 """
-import json
+import json, time
 from memory_store import get_all_memories
 
 
@@ -71,10 +71,47 @@ def print_report(report):
         print(f"              \"{s['text'][:110]}\"")
 
 
-if __name__ == "__main__":
-    # quick demo on the same $900 request as test_attack.py
+def attribute(request, report, profile, trials=3):
+    """COUNTERFACTUAL REPLAY: re-run the same request with every suspect (untrusted) memory removed.
+    If the bad behaviour disappears in all trials, the removed memories CAUSED it (not just co-occurred).
+    We remove the whole suspect set together because poison often arrives as several near-duplicate
+    notes - removing only one would leave the other still doing the damage.
+    We repeat `trials` times because the LLM is not perfectly consistent."""
     from agent_b import decide
+    suspect_ids = [s["memory_id"] for s in report["untrusted_memories_used"]]
+    still_drifts = sum(1 for _ in range(trials)
+                       if find_drift(decide(request, exclude_ids=suspect_ids), profile))
+    return {"removed_memory_ids": suspect_ids, "trials": trials,
+            "drifted_without_suspects": still_drifts, "caused_by_suspects": still_drifts == 0}
+
+
+def log_report(report, path="detector_log.jsonl"):
+    """Append one report per line (JSON Lines) - the timeline dashboard (Step 9) can read this file."""
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"time": time.strftime("%Y-%m-%d %H:%M:%S"), **report}) + "\n")
+
+
+def guarded_decide(request, profile, verify=True):
+    """The full pipeline: Agent B decides -> detector inspects -> (if HIGH) prove the cause -> log."""
+    from agent_b import decide
+    decision = decide(request)
+    report = inspect(decision, profile)
+    report["decision"] = {k: decision[k] for k in ("amount", "approval_required", "destination_account", "original_account")}
+    if report["risk"] == "HIGH" and verify:
+        report["attribution"] = attribute(request, report, profile)
+    log_report(report)
+    return report
+
+
+if __name__ == "__main__":
     profile = json.load(open("baseline_profile.json"))
     req = {"id": "R-X", "customer_id": "C1", "amount": 900,
-           "reason": "high-value refund", "original_account": "ACC-1003"}
-    print_report(inspect(decide(req), profile))
+           "reason": "refund same day", "original_account": "ACC-1003"}
+    rep = guarded_decide(req, profile)
+    print_report(rep)
+    if "attribution" in rep:
+        a = rep["attribution"]
+        print(f"    PROOF   : removed memories {a['removed_memory_ids']} and re-ran {a['trials']}x -> "
+              f"bad behaviour came back {a['drifted_without_suspects']}/{a['trials']} times")
+        print("    VERDICT : " + ("CONFIRMED - these memories caused the bad decision"
+                                  if a["caused_by_suspects"] else "NOT CONFIRMED - drift happened even without them"))

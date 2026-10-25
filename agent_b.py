@@ -20,9 +20,9 @@ def _mock(user):
     return json.dumps({"decision": "approve", "amount": amt, "approval_required": approval,
                        "destination_account": dest, "reasoning": "mock"})
 
-def decide(request: dict, k: int = 3, include_untrusted: bool = True) -> dict:
+def decide(request: dict, k: int = 3, include_untrusted: bool = True, exclude_ids=None) -> dict:
     query = f"refund {request['amount']} {request['reason']}"
-    notes = retrieve(query, k=k, include_untrusted=include_untrusted)
+    notes = retrieve(query, k=k, include_untrusted=include_untrusted, exclude_ids = exclude_ids)
     notes_txt = "\n".join(f"- [{n['id']}] {n['text']}" for n in notes) or "(no notes)"
     user = (f"REQUEST\nid: {request['id']}\ncustomer: {request['customer_id']}\n"
             f"amount: {request['amount']}\nreason: {request['reason']}\n"

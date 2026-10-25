@@ -20,12 +20,15 @@ def _normalize(row):
             "written_by": row["source_agent"], "timestamp": row["created_at"],
             "origin_document": row.get("origin_document"), "sim_day": row.get("sim_day", 0)}
 
-def retrieve(query, k=3, include_untrusted=True):
+def retrieve(query, k=3, include_untrusted=True, exclude_ids=None):
     """Top-k memories most similar to the query. include_untrusted=False is used only to build the clean baseline."""
     q = _tokens(query)
     rows = [_normalize(r) for r in get_all_memories()]
+    
     if not include_untrusted:
         rows = [r for r in rows if r["source_trust"] == "trusted"]
+    if exclude_ids:   # used by the detector's counterfactual replay (Step 7)
+        rows = [r for r in rows if r["id"] not in {str(i) for i in exclude_ids}]
     for r in rows:
         r["score"] = _cos(q, _tokens(r["text"]))
     rows.sort(key=lambda r: (r["score"], int(r["id"])), reverse=True)
