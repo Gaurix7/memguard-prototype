@@ -1,0 +1,18 @@
+{
+  "n_runs": 20,
+  "approval_threshold": 500,
+  "high_amount_runs": 8,
+  "approval_rate_above_threshold": 1.0,
+  "approval_rate_below_threshold": 0.0,
+  "dest_equals_original_rate": 1.0,
+  "known_destination_accounts": [
+    "ACC-1001",
+    "ACC-1002",
+    "ACC-1004",
+    "ACC-1005",
+    "ACC-1006",
+    "ACC-1007",
+    "ACC-1009",
+    "ACC-1010"
+  ]
+}
