@@ -4,9 +4,16 @@ Run from the project folder:   py demo_dashboard.py
 It opens http://localhost:8000 in your browser. Needs only the standard library plus your existing project files.
 Live buttons call the model (Groq). "Replay saved run" reads detector_log.jsonl and makes NO model calls.
 Run order first: seed_trusted.py -> baseline.py -> plant_poison.py"""
-import json, os, sys, threading, webbrowser
+import json, os, sys, threading, webbrowser, time, traceback
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
+
+# Windows terminals may default to cp1252; demo memory text can contain Unicode punctuation.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except (AttributeError, OSError):
+        pass
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 from detector import guarded_decide, inspect, find_drift   # same pipeline as compare_demo.py
@@ -67,7 +74,19 @@ def api_run(body):
         return {"error": "Unknown request id."}
     clean = {k: v for k, v in req.items() if k != "kind"}
     with LOCK:
-        return guarded_decide(clean, load_profile(), verify=bool(body.get("verify")))
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"\n[{stamp}] LIVE RUN started: {req['id']} (${req['amount']}, {req['reason']})", flush=True)
+        try:
+            result = guarded_decide(clean, load_profile(), verify=bool(body.get("verify")))
+            # Print the exact JSON object returned to the browser, including detector evidence.
+            print("LIVE RUN RESULT (same data sent to frontend):", flush=True)
+            print(json.dumps(result, indent=2, ensure_ascii=False), flush=True)
+            return result
+        except Exception as ex:
+            error = f"{type(ex).__name__}: {ex}"
+            print(f"LIVE RUN ERROR (also shown in frontend): {error}", flush=True)
+            traceback.print_exc()
+            return {"error": error}
 
 
 def api_replay(rid):
@@ -488,7 +507,9 @@ if __name__ == "__main__":
             port += 1
     url = f"http://localhost:{port}"
     print("MemWatch demo running at", url, " (Ctrl+C to stop)")
-    if not os.environ.get("NO_BROWSER"):
+    # Avoid crashing a broken default browser (for example, chrome.exe on some Windows setups).
+    # Set OPEN_BROWSER=1 explicitly when automatic browser launch is desired.
+    if os.environ.get("OPEN_BROWSER") == "1":
         webbrowser.open(url)
     try:
         srv.serve_forever()

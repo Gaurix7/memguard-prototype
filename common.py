@@ -35,6 +35,7 @@ def llm(system: str, user: str, mock=None, max_tokens=1500) -> str:
     if USE_MOCK:
         if mock is None:
             raise RuntimeError("No API key set and no mock provided")
+        print("    [Model] No API key configured; using offline mock response.", flush=True)
         return mock(user)
     import urllib.request, urllib.error, time
     payload = {"model": MODEL, "temperature": 0, "max_tokens": max_tokens,
@@ -44,14 +45,18 @@ def llm(system: str, user: str, mock=None, max_tokens=1500) -> str:
         data=json.dumps(payload).encode("utf-8"),
         headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json",
                  "User-Agent": "memguard-prototype/0.1"})
+    print(f"    [Model] Calling {BASE_URL} with model {MODEL} (timeout: 90s).", flush=True)
     for attempt in range(4):
         try:
+            print(f"    [Model] Request attempt {attempt + 1}/4...", flush=True)
             with urllib.request.urlopen(req, timeout=90) as r:
                 data = json.loads(r.read().decode("utf-8"))
+            print("    [Model] Response received; parsing Agent B decision.", flush=True)
             return data["choices"][0]["message"].get("content") or ""
         except urllib.error.HTTPError as e:
             body = e.read().decode("utf-8", errors="replace")[:300]
             if e.code == 429 and attempt < 3:      # rate limit: wait and retry
+                print(f"    [Model] Rate limited; retrying after {4 * (attempt + 1)}s.", flush=True)
                 time.sleep(4 * (attempt + 1))
                 continue
             raise RuntimeError(f"LLM HTTP {e.code}: {body}")
