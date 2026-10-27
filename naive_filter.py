@@ -15,7 +15,7 @@ def _mock(user):
     return json.dumps({"malicious": bool(hit), "reason": f"matched '{hit}'" if hit else "reads as ordinary policy text"})
 
 def scan_document(text: str) -> dict:
-    out = parse_json(llm(SYSTEM, f"DOCUMENT:\n{text}", mock=_mock, max_tokens=200))
+    out = parse_json(llm(SYSTEM, f"DOCUMENT:\n{text}", mock=_mock, max_tokens=1500))
     return {"flagged": bool(out["malicious"]), "reason": out.get("reason", "")}
 
 if __name__ == "__main__":

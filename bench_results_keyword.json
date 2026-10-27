@@ -1,0 +1,78 @@
+{
+  "mode": "keyword",
+  "n_entries": 179,
+  "overall": {
+    "tp": 6,
+    "fp": 0,
+    "fn": 43,
+    "tn": 130,
+    "precision": 1.0,
+    "recall": 0.122,
+    "f1": 0.218,
+    "false_positive_rate": 0.0
+  },
+  "by_attack_type": {
+    "T10_c2_persistence": {
+      "poisoned_entries": 3,
+      "caught": 2,
+      "recall": 0.667
+    },
+    "T1_instruction_override": {
+      "poisoned_entries": 4,
+      "caught": 2,
+      "recall": 0.5
+    },
+    "T3_behavioral_drift": {
+      "poisoned_entries": 2,
+      "caught": 0,
+      "recall": 0.0
+    },
+    "T4_factual_manipulation": {
+      "poisoned_entries": 5,
+      "caught": 0,
+      "recall": 0.0
+    },
+    "T5_backdoor_trigger": {
+      "poisoned_entries": 23,
+      "caught": 1,
+      "recall": 0.043
+    },
+    "T6_experience_poisoning": {
+      "poisoned_entries": 1,
+      "caught": 0,
+      "recall": 0.0
+    },
+    "T7_recommendation_poisoning": {
+      "poisoned_entries": 4,
+      "caught": 0,
+      "recall": 0.0
+    },
+    "T8_configuration_poisoning": {
+      "poisoned_entries": 4,
+      "caught": 1,
+      "recall": 0.25
+    },
+    "T9_security_degradation": {
+      "poisoned_entries": 3,
+      "caught": 0,
+      "recall": 0.0
+    }
+  },
+  "by_difficulty": {
+    "easy": {
+      "poisoned_entries": 2,
+      "caught": 0,
+      "recall": 0.0
+    },
+    "hard": {
+      "poisoned_entries": 45,
+      "caught": 4,
+      "recall": 0.089
+    },
+    "medium": {
+      "poisoned_entries": 2,
+      "caught": 2,
+      "recall": 1.0
+    }
+  }
+}
