@@ -79,8 +79,12 @@ def attribute(request, report, profile, trials=3):
     We repeat `trials` times because the LLM is not perfectly consistent."""
     from agent_b import decide
     suspect_ids = [s["memory_id"] for s in report["untrusted_memories_used"]]
-    still_drifts = sum(1 for _ in range(trials)
-                       if find_drift(decide(request, exclude_ids=suspect_ids), profile))
+    print(f"  [Detector] Verifying whether suspect memories {suspect_ids} caused the drift ({trials} replay trials).", flush=True)
+    still_drifts = 0
+    for i in range(trials):
+        print(f"  [Detector] Counterfactual replay {i + 1}/{trials}: removing suspect memories.", flush=True)
+        if find_drift(decide(request, exclude_ids=suspect_ids), profile):
+            still_drifts += 1
     return {"removed_memory_ids": suspect_ids, "trials": trials,
             "drifted_without_suspects": still_drifts, "caused_by_suspects": still_drifts == 0}
 
@@ -94,12 +98,35 @@ def log_report(report, path="detector_log.jsonl"):
 def guarded_decide(request, profile, verify=True):
     """The full pipeline: Agent B decides -> detector inspects -> (if HIGH) prove the cause -> log."""
     from agent_b import decide
+    print("  [Detector] Running Agent B with current shared memory.", flush=True)
     decision = decide(request)
+    print("  [Detector] Comparing decision with the normal-workflow baseline.", flush=True)
     report = inspect(decision, profile)
+    if report["untrusted_memories_used"]:
+        print(f"  [Detector] Provenance check: FOUND {len(report['untrusted_memories_used'])} untrusted memory item(s).", flush=True)
+        for memory in report["untrusted_memories_used"]:
+            print(f"    - memory {memory['memory_id']} from {memory['origin_document']}: {memory['text']}", flush=True)
+    else:
+        print("  [Detector] Provenance check: no untrusted memories were used.", flush=True)
+    if report["drift_violations"]:
+        print(f"  [Detector] Baseline drift check: FOUND {len(report['drift_violations'])} violation(s).", flush=True)
+        for violation in report["drift_violations"]:
+            print(f"    - {violation}", flush=True)
+    else:
+        print("  [Detector] Baseline drift check: no violations.", flush=True)
+    if report["risk"] == "HIGH":
+        print("  [Detector] Detection rule: untrusted memory was used AND the decision broke the baseline; block and review.", flush=True)
+    elif report["risk"] == "WATCH":
+        print("  [Detector] Detection rule: exactly one of provenance risk or baseline drift was found; allow and log.", flush=True)
+    else:
+        print("  [Detector] Detection rule: no untrusted memory and no baseline drift; allow.", flush=True)
+    print(f"  [Detector] Risk assessment: {report['risk']} ({report['action']}).", flush=True)
     report["decision"] = {k: decision[k] for k in ("amount", "approval_required", "destination_account", "original_account")}
     if report["risk"] == "HIGH" and verify:
         report["attribution"] = attribute(request, report, profile)
+        print(f"  [Detector] Attribution result: {'confirmed' if report['attribution']['caused_by_suspects'] else 'not confirmed'}.", flush=True)
     log_report(report)
+    print("  [Detector] Saved run to detector_log.jsonl.", flush=True)
     return report
 
 
